@@ -1,0 +1,56 @@
+#!/bin/bash
+
+# hdserial.sh
+# retrieves the serial num of main hard-drive and stores it in a text file for
+#+ retrieval and/or upload/download.
+
+# Test for su priv's
+whoaminow() {
+  if [ $(id -u) != "0" ] ; then
+    echo "You must have superuser privileges to run this application"
+    echo ""
+	  exit 99
+  fi
+} # end whoaminow()
+
+helpBlurb() {
+  cat <<__EOF__
+Usage is: sudo $0 [devname]
+Gets the serial number of whatever disk drive specified and stores it in a text
+file that can be retrieved by the YantraNet platform from the portal.
+  [devname]      Specifies the drive to query, e.g., /dev/sda
+
+__EOF__
+} # end helpBlurb()
+
+help() {
+  # help is passed one argument: a 1 or a 2
+  # 1 means to print help and continue where you left off.
+  # 2 means to print help and exit
+  if [ -z $1 ] ; then
+    helpBlurb
+    exit 1
+  else
+    case $1 in
+      1 )
+        helpBlurb
+        break
+      ;;
+      2 | * )
+        helpBlurb
+        exit 0
+    esac
+  fi
+} # end help()  
+
+whoaminow
+if [[ -z $1 ]]
+then
+  help 2
+else
+  disk="$1"
+  serialnum=`hdparm -I $disk | grep "Serial Number" | awk '{ print $3 }'`
+  serialnum=`echo "$serialnum" | sed 's/ /%20/g'`
+  wget -q -O /dev/null "http://localhost:63985/property/set?property_id=62&value=$serialnum"
+fi
+

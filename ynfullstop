@@ -1,0 +1,128 @@
+#!/bin/bash
+
+#  ynfullstop.sh
+#  located in /usr/bin
+#  can be used to stop and start ALL activities of a device
+#+ including the agent itself.
+
+# Test for su priv's
+whoaminow() {
+  if [ $(id -u) != "0" ] ; then
+    echo "You must have superuser privileges to run this application"
+    echo ""
+	  exit 99
+  fi
+} # end whoaminow()
+
+helpBlurb() {
+  cat <<__EOF__
+Usage is: sudo $0 OPTIONS
+$0 is a script that allow you to stop the YantraNet services and processes
+quickly, easily and in a flexible manner. If invoked without any arguments, it
+will assume the -b option.
+  -b, -B, --basic    Stops only the WebApp and the AppMonitor so that routine
+                       maintenance can take place without the videos playing. 
+  -f, -F, --full     Stops the WebApp, AppMonitor, the Agent and the 
+                       AgentMonitor services to help in mucking about in the
+                       guts of the machine that might involve one of those
+                       services or something that relies on them being stopped.
+                       A restart should be enacted after invoking this script
+                       with this argument, as the device will NOT be able to 
+                       communicate with the YantraNet server until such time.
+  -r, -R, --reverse  Puts everything back the way it was. If invoked after a -f,
+                       then you are obviously either on the console itself, or
+                       logged in remotely. Otherwise, you must have issued a -b
+                       from the portal and are now attempting to set things
+                       back to rights. Good luck with that.
+  -s, -S, --start    Should just start the AppMonitor, in case it was stopped
+                       with a previous command or left in that state
+                       accidentally.
+      --help     Display this help and exit
+__EOF__
+} # end helpBlurb()
+
+help() {
+  # help is passed one argument: a 1 or a 2
+  # 1 means to print help and continue where you left off.
+  # 2 means to print help and exit
+  if [ -z $1 ] ; then
+    helpBlurb
+    exit 1
+  else
+    case $1 in
+      1 )
+        helpBlurb
+        break
+      ;;
+      2 | * )
+        helpBlurb
+        exit 0
+    esac
+  fi
+} # end help()  
+
+stopMonitor() {
+  /etc/init.d/yantranet_agentMonitor.sh stop
+} # end stopMonitor()
+  
+stopAgent() {
+  /etc/init.d/yantranet_agent.sh stop
+} # end stopAgent
+
+stopAppMonitor() {
+  killall -q AppMonitor
+} # end stopAppMonitor()
+
+stopWebApp() {
+  killall -q WebApp
+} # end stopWebApp
+
+startMonitor() {
+  /etc/init.d/yantranet_agentMonitor.sh start
+} # end stopMonitor()
+  
+startAgent() {
+  /etc/init.d/yantranet_agent.sh start
+} # end stopAgent
+
+startAppMonitor() {
+  su - yantrauser <<__EOF__
+  /opt/yantranet/agent/AppMonitor -db /opt/yantranet/agent/Agent.db
+__EOF__
+} # end stopAppMonitor()
+
+################################################
+
+whoaminow
+
+if [[ $# -gt 1 ]]
+then
+  help
+elif [[ $# -lt 1 ]]
+then
+  myArg="-b"
+else
+  myArg="$1"
+fi  
+   
+case $myArg in
+  -b | -B | --basic )
+    stopAppMonitor && sleep 1 && stopWebApp
+    exit 0
+  ;;
+  -f | -F | --full )
+    stopAppMonitor && sleep 1 && stopWebApp && stopMonitor && stopAgent
+    exit 0
+  ;;
+  -r | -R | --reverse )
+    startMonitor && sleep 35 && startAppMonitor
+    exit 0
+  ;;
+  -s | -S | --start )
+    startAppMonitor
+    exit 0
+  ;;
+  --help | * )
+    help
+esac
+  

@@ -1,0 +1,36 @@
+#!/bin/bash
+
+listName='/home/yantrauser/bin/media_list.csv'
+baseDir='/opt/yantranet/agent/content'
+
+if [[ ! -e "$listName" ]]
+then
+  echo "Can't find the $listName you were looking for!"
+  echo ""
+  exit 99
+else
+  flip -u -v "$listName"
+fi
+
+cd $baseDir
+
+while read -r culledFile
+do
+  if [ -e "$culledFile" ]
+  then
+    echo
+    echo "Found $culledFile"
+    rm -f "$culledFile"
+
+    if [ ! -e "$culledFile" ]
+    then
+      echo "$culledFile has been deleted! Yay!!!"
+    else
+      echo "$culledFile still lives!!!!! Zombie!"
+    fi
+
+    elif [ ! -e "$culledFile" ]
+    then
+      echo "Didn't find $culledFile"
+  fi
+done < "$listName"
