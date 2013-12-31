@@ -9,8 +9,8 @@
 #+ That's always a good idea, yeah?
 
 # Variables
-#              profileID=27 #This will be the new ID to use!  
-               profileID=22
+               profileID=27 #This will be the new ID to use!  
+#              profileID=22
                configDir='/etc/'
                 agentDir='/opt/yantranet/agent/'
                  homeDir='/home/yantrauser/'
