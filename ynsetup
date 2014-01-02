@@ -200,13 +200,13 @@ __EOF__
 
 confirmConfirm() {
   local choice
-  local prompt="Are you sure?? [yes/n] >"
+  local prompt="Are you sure?? [Yes/n] >"
   echo -n $prompt
   read choice
   while :
   do
     case $choice in
-      yes | YES | Yes )
+      yes | YES | Yes | "" )
         break
       ;;
       n | N )
@@ -701,7 +701,7 @@ process_files() {
 
 ###############################################################################
 # Variables (for review only)
-#               profileID=22
+#               profileID=27
 #               configDir='/etc/'
 #                agentDir='/opt/yantranet/agent/'
 #                 homeDir='/home/yantrauser/'
@@ -760,10 +760,10 @@ Would you like to restart now?
 __EOF__`
   while :
   do
-    echo -n "$lastPrompt [y/n] > "
+    echo -n "$lastPrompt [Y/n] > "
     read
     case $REPLY in
-      y | Y )
+      y | Y | "" )
         confirmConfirm
         reboot
       ;;
