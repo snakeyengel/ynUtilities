@@ -1,8 +1,10 @@
 #!/bin/bash
 
-# ynsetup.sh
 # Setup script for the yantranet platform's digital signage module
 # on the linux platform
+#
+# Copyright (c) 2013, Eric Young. All rights reserved.
+#
 
 # TODO:
 # If the license file login fails, STOP! lol

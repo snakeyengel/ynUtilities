@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Used to cull media files from the device by reading them from .csv file
+#
+# Copyright (c) 2013, Eric Young. All rights reserved.
+#
+
 listName='/home/yantrauser/bin/media_list.csv'
 baseDir='/opt/yantranet/agent/content'
 

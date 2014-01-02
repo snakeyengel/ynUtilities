@@ -1,9 +1,10 @@
 #!/bin/bash
 
-#  ynfullstop.sh
-#  located in /usr/bin
-#  can be used to stop and start ALL activities of a device
-#+ including the agent itself.
+# Can be used to stop and start ALL YantraNet related activities of a device
+# including the agent itself.
+#
+# Copyright (c) 2013, Eric Young. All rights reserved.
+#
 
 # Test for su priv's
 whoaminow() {
@@ -16,28 +17,26 @@ whoaminow() {
 
 helpBlurb() {
   cat <<__EOF__
-Usage is: sudo $0 OPTIONS
+
+Usage is: sudo $0 [ -bfrsh] [ --basic] [ --full] [ --reverse] [ --start] [ --help]
+
 $0 is a script that allow you to stop the YantraNet services and processes
 quickly, easily and in a flexible manner. If invoked without any arguments, it
 will assume the -b option.
-  -b, -B, --basic    Stops only the WebApp and the AppMonitor so that routine
-                       maintenance can take place without the videos playing. 
-  -f, -F, --full     Stops the WebApp, AppMonitor, the Agent and the 
-                       AgentMonitor services to help in mucking about in the
-                       guts of the machine that might involve one of those
-                       services or something that relies on them being stopped.
-                       A restart should be enacted after invoking this script
-                       with this argument, as the device will NOT be able to 
-                       communicate with the YantraNet server until such time.
-  -r, -R, --reverse  Puts everything back the way it was. If invoked after a -f,
-                       then you are obviously either on the console itself, or
-                       logged in remotely. Otherwise, you must have issued a -b
-                       from the portal and are now attempting to set things
-                       back to rights. Good luck with that.
-  -s, -S, --start    Should just start the AppMonitor, in case it was stopped
-                       with a previous command or left in that state
-                       accidentally.
-      --help     Display this help and exit
+
+  -b, --basic    Stops WebApp and AppMonitor for maintenance without video. 
+
+  -f, --full     Stops WebApp, AppMonitor, Agent and AgentMonitor. Good for
+                 mucking about without worrying about the services in use.
+                 Restart is required after this argument because device 
+                 can not communicate with YantraNet server.
+
+  -r, --reverse  Tries to put all back the way it was. YMMV. Caveat emptor. 
+
+  -s, --start    Starts the AppMonitor.
+
+  -h, --help     Display this help and exit
+
 __EOF__
 } # end helpBlurb()
 
@@ -106,19 +105,19 @@ else
 fi  
    
 case $myArg in
-  -b | -B | --basic )
+  -b | --basic )
     stopAppMonitor && sleep 1 && stopWebApp
     exit 0
   ;;
-  -f | -F | --full )
+  -f | --full )
     stopAppMonitor && sleep 1 && stopWebApp && stopMonitor && stopAgent
     exit 0
   ;;
-  -r | -R | --reverse )
+  -r | --reverse )
     startMonitor && sleep 35 && startAppMonitor
     exit 0
   ;;
-  -s | -S | --start )
+  -s | --start )
     startAppMonitor
     exit 0
   ;;

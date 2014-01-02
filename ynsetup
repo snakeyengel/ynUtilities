@@ -1,16 +1,12 @@
 #!/bin/bash
 
-# ynsetup.sh
 # Setup script for the yantranet platform's digital signage module
 # on the linux platform
-
-# TODO:
-# If the license file login fails, STOP! lol
-#+ That's always a good idea, yeah?
+#
+# Copyright (c) 2013, Eric Young. All rights reserved.
+#
 
 # Variables
-#              profileID=22
-
                profileID=27 #This will be the new ID to use!  
                configDir='/etc/'
                 agentDir='/opt/yantranet/agent/'
@@ -32,45 +28,9 @@ simpleGatewayServiceFile='serviceconfig.xml'
 
 ######### Functions ##########
 
-askConfigFile() {
-  if [[ -e "$configDir$ynsetupConf" ]]
-  then
-    echo "A config file was found for this program"
-    echo "Here are the contents:"
-    echo ""
-    echo "-----------------------------------------"
-    cat "$configDir$ynsetupConf"
-    echo "-----------------------------------------"
-    echo ""
-    local confChoice="Would you like to use it?"
-    while :
-    do
-      read -e -p "$confChoice [Y/n] > "
-      case $REPLY in
-        Y | y | "" )
-          echo "Okay. We will use it!"
-          . $configDir$ynsetupConf
-          useConfig='true'
-          sleep .75
-          break
-        ;;
-        N | n )
-          echo "Okay. We will start fresh!"
-          useConfig='false'
-          sleep .75
-          break
-        ;;
-        * )
-          continue
-      esac
-    done
-  else
-    useConfig='false'
-  fi
-} # end askConfigFile()
-
 escapeParametersBatch() {
-  local myVars=( username newname description address1 address2 city state postal country )
+#  local myVars=( username newname description address1 address2 city state postal country )
+  local myVars=( username newname description )
   for (( i=0 ; i<"${#myVars[@]}" ; i++ ))
   do
     local theOne
@@ -85,23 +45,6 @@ escapeParametersSingle() {
   hold=`echo "$hold" | sed 's/ /%20/g'`
   echo "$hold"
 } # end escapeParamatersSingle()
-
-writeConfigFile() {
-  if [[ -f "$configDir$ynsetupConf" ]]
-  then
-    rm $configDir$ynsetupConfBackup
-    mv -v $configDir$ynsetupConf $configDir$ynsetupConfBackup
-    echo "The config file has been backed up."
-  fi
-  local myVars=( username newname description address1 address2 city state postal country )
-  for (( i=0 ; i<"${#myVars[@]}" ; i++ ))
-  do
-    local theOne
-    eval theOne=\$${myVars[$i]}
-#    echo $theOne
-    echo "${myVars[$i]}=\"$theOne\"" | tee -a $configDir$ynsetupConf
-  done
-} # end writeConfigFile()
 
 copySrcInstall() {
   if [[ -e "$homeDir$installSourceFile" ]]
@@ -136,7 +79,7 @@ stopWebApp() {
 versionInfo() {
   echo ""
   echo "         Name: $0"
-  echo "      Version: 1.0.7"
+  echo "      Version: 1.1.0"
   echo "       Author: Eric Young (eyoung@everwell.com)"
   echo "      Written: Nov. 10, 2012"
   echo " Last Updated: Nov. 29, 2012"
@@ -148,6 +91,14 @@ Changelog:
   v.7:
     Fixed the stop* functions in their call order and dependancies to allow time
     for them to stop and clear before calling the next or dependant function
+  v1.0:
+    With the introduction of batched device creation from the server side, the
+    functionality of the script dramatically changed. Nothing was required for
+    device creation but the username, password, and hostname because the device
+    already existed on the server and the whole function of this script is to
+    now check in and verify its identity and slurp down the already created 
+    license key and check in. Many functions are no longer called and the whole
+    process is now very simple and fast.
 __EOF__
 } # end versionInfo()
 
@@ -162,17 +113,23 @@ whoaminow() {
 
 helpBlurb() {
   cat <<__EOF__
-Usage is: sudo $0 OPTIONS
-Setup a YantraNet Digital-Signage device for either deployment into the field,
-or for imaging as a generic device by removing all licensing and stopping all
-YantraNet related startup applications and services.
+  
+Usage is: sudo $0 [-c|--create|-p|--prep|-h|--help|-v|--version]
 
-  -c, -C, --create   Prepares a device for field deployment
-  -p, -P, --prep     Removes all specific information and services in
-                       preparation for capturing an image of the device for
-                       use in a Clonezilla or similar environment
-      --help     Display this help and exit
-      --version  output version information and exit
+Can be used to setup a YantraNet digital-signage device for deployment
+into the field, or for preparing an image by removing all licensing and
+stopping all YantraNet related startup applications and services.
+
+      -c, --create   Prepares a device for field deployment.
+
+      -p, --prep     Removes all specific information and services in
+                     preparation for capturing an image of the device for
+                     use in Clonezilla or other similar environment.
+
+      -h, --help     Display this help and exit.
+
+      -v, --version  Show version information and exit.
+
 __EOF__
 } # end helpBlurb()
 
@@ -218,27 +175,25 @@ intro() {
 
 YantraNet Digital-Signage module setup
 ======================================
-You will need to provide the following to complete the setup:
-   1) Your YantraNet account username
-   2) Your YantraNet account password
-   3) Your device information
-     a) The desired name for this media player
-        (it must be unique across your signage network)
-     b) The complete physical mailing address of where this
-        device will be installed
-     c) A brief but meaningful description of this device
-        e.g. "Breakroom player", "East Waiting Room", etc.
+You need to provide the following:
+   1) YantraNet username
+   2) YantraNet password
+   3) Device information
+     a) Name for this media player (unique across signage network)
+     b) Description of device, e.g. "Breakroom player" or "Main St"
 
-Please note: you will be able to review and change any entry
-before any changes are made to the filesystem.
+You will be able to review and edit your entries before any changes are made
+to the filesystem or the network
 
-Characters inside these: [abc] are either existing values,
-such as [current device name] or are choices to be made, such as [Y/n].
+Bracketed entries like this, e.g. [S-398-032], represent existing values. By
+pressing Enter at that prompt, you are essentially entering whatever value
+was in the brackets.
 
-[Y/n] means that the choices are Yes (Y) or No (n) and that if you press
-Enter without typing anything, your choice will be Y or Yes.
-You may type upper or lowercase responses.
-
+Bracketed entries like this, e.g. [y/n], represent a choice to be made.
+Any choices in uppercase, eg. [Y/n], means simply pressing Enter, will result
+in a "Y" (Yes) response. [y/N] would mean that a "N" (No) would be entered by
+default.
+  
 __EOF__
 
 } # end intro()
@@ -268,14 +223,13 @@ confirmConfirm() {
 
 startConfirm() {
   local choice
-  local prompt="Are you ready to proceed? [y/n] >"
+  local prompt="Are you ready to proceed? [Y/n] >"
   echo -n $prompt
   read choice
   while [ true ]
   do
     case $choice in
-      y | Y )
-        confirmConfirm
+      y | Y | "" )
         clear
         break
       ;;
@@ -423,324 +377,6 @@ hostnameAsk() {
   esac
 } # end hostNameAsk()
 
-address1Ask() {
-  local prompt1="Please enter the street address: eg. 123 Main St"
-  local prompt2
-
-  if [[ ! -z "$address1" ]]
-  then
-    prompt2=`cat <<__EOF__
-Current street address is
-  [$address1]
-__EOF__`
-
-    echo $prompt2
-    read -e -i "$address1" -p "$prompt1> "
-    case $REPLY in
-      $address1 | "" )
-        echo "The street address will remain the same"
-        echo "  $address1"
-        echo ""
-        editParams
-        break
-      ;;
-      * )
-        echo "The new street address is:"
-        address1=$REPLY
-        echo "  $address1"
-        echo ""
-        editParams
-        break
-    esac
-  else
-    echo -n "$prompt1 >" 
-    read
-    while [ true ]
-    do
-      case $REPLY in
-        "" )
-          echo -n "$prompt1 >"
-          read
-          continue
-        ;;
-        * )
-          echo "The new street address is:"
-          address1=$REPLY
-          echo "  $address1"
-          echo ""
-          break
-      esac
-    done
-  fi        
-} # end addressAsk1()
-
-address2Ask() {
-  local prompt1="Enter the suite, building, floor or room #:"
-  local prompt2
-
-  if [[ ! -z "$address2" ]]
-  then
-    prompt2=`cat <<__EOF__
-Current secondary address is
-  [$address2/!! (delete)]
-
-__EOF__`
-
-    echo $prompt1
-    read -e -i "$address2" -p "$prompt2> "
-    case $REPLY in
-      $address2 | "" )
-        echo "The secondary address will remain the same"
-        echo "  $address2"
-        echo ""
-        editParams
-        break
-      ;;
-      !! )
-        address2=""
-        echo "Address 2 has been reset to no value"
-        editParams
-        break
-      ;;
-      * )
-        echo "The new secondary address is:"
-        address2=$REPLY
-        echo "  $address2"
-        echo ""
-        editParams
-        break
-    esac
-  else
-    echo -n "$prompt1 >" 
-    read
-    while [ true ]
-    do
-      case $REPLY in
-        "" )
-          echo "  There is no secondary address at this location"
-          echo ""
-          break
-        ;;
-        * )
-          echo "The new secondary address is:"
-          address2=$REPLY
-          echo "  $address2"
-          echo ""
-          break
-      esac
-    done
-  fi        
-} # end addressAsk2()
-
-cityAsk() {
-  local prompt="Enter the City"
-  
-  if [[ ! -z "$city" ]]
-  then
-    read -e -i "$city" -p "$prompt [$city]> "
-    case $REPLY in
-      $city | "" )
-        echo "The city will remain the same"
-        echo "  $city"
-        echo ""
-        editParams
-        break
-      ;;
-      * )
-        city=$REPLY
-        echo "  The city is now $city"
-        echo ""
-        editParams
-        break
-    esac
-  else
-    echo -n "$prompt >"
-    read
-    while [ true ]
-    do
-      case $REPLY in
-        "" )
-          echo -n "$prompt >"
-          read
-          continue
-        ;;
-        * )
-          city=$REPLY
-          echo "  The city will be set to $city"
-          echo ""
-          break
-      esac
-    done
-  fi
-} # end of cityAsk()
-
-stateAsk() {
-  local prompt="Enter the State name"
-  
-  if [[ ! -z "$state" ]]
-  then
-    read -e -i $state -p "$prompt [$state]> "
-    case $REPLY in
-      $state | "" )
-        echo "The state will remain the same"
-        echo "  $state"
-        echo ""
-        editParams
-        break
-      ;;
-      * )
-        state=$REPLY
-        echo "  The state is now $state"
-        echo ""
-        editParams
-        break
-    esac
-  else
-    echo -n "$prompt >"
-    read
-    while [ true ]
-    do
-      case $REPLY in
-        "" )
-          echo -n "$prompt >"
-          read
-          continue
-        ;;
-        * )
-          state=$REPLY
-          echo "  The state will be set to $state"
-          echo ""
-          break
-      esac
-    done
-  fi
-} # end of stateAsk()
-
-postalAsk() {
-  local prompt="Enter the Zip or postal code"
-  
-  if [[ ! -z "$postal" ]]
-  then
-    read -e -i $postal -p "$prompt [$postal]> "
-    case $REPLY in
-      $postal | "" )
-        echo "The postal code will remain the same"
-        echo "  $postal"
-        editParams
-        break
-      ;;
-      * )
-        postal=$REPLY
-        echo "  The postal code is now $postal"
-        echo ""
-        editParams
-        break
-    esac
-  else
-    echo -n "$prompt >"
-    read
-    while [ true ]
-    do
-      case $REPLY in
-        "" )
-          echo -n "$prompt >"
-          read
-          continue
-        ;;
-        * )
-          postal=$REPLY
-          echo "  The postal code will be set to $postal"
-          echo ""
-          break
-      esac
-    done
-  fi
-} # end of postalAsk()
-
-countryAsk() {
-  local prompt="Enter the Country name"
-  
-  if [[ ! -z "$country" ]]
-  then
-    read -e -i $country -p "$prompt [$country]> "
-    case $REPLY in
-      $country | "" )
-        echo "The country will remain the same"
-        echo "  $country"
-        echo ""
-        editParams
-        break
-      ;;
-      * )
-        country=$REPLY
-        echo "  The country is now $country"
-        echo ""
-        editParams
-        break
-    esac
-  else
-    echo -n "$prompt >"
-    read
-    while [ true ]
-    do
-      case $REPLY in
-        "" )
-          echo -n "$prompt >"
-          read
-          continue
-        ;;
-        * )
-          country=$REPLY
-          echo "  The country will be set to $country"
-          echo ""
-          break
-      esac
-    done
-  fi
-} # end of countryAsk()
-
-descriptionAsk() {
-  local prompt="Enter the Description for the device"
-  
-  if [[ ! -z "$description" ]]
-  then
-    read -e -i "$description" -p "$prompt [$description]> "
-    case $REPLY in
-      $description | "" )
-        echo "The description will remain the same"
-        echo "  $description"
-        echo ""
-        editParams
-        break
-      ;;
-      * )
-        description=$REPLY
-        echo "  The description is now $description"
-        echo ""
-        editParams
-        break
-    esac
-  else
-    echo -n "$prompt >"
-    read
-    while [ true ]
-    do
-      case $REPLY in
-        "" )
-          echo -n "$prompt >"
-          read
-          continue
-        ;;
-        * )
-          description=$REPLY
-          echo "  The description will be set to $description"
-          echo ""
-          break
-      esac
-    done
-  fi
-} # end of descriptionAsk()
-
 recap() {
   if [[ ! -z "$1" ]] && [[ "$1"="c" ]]
   then
@@ -753,33 +389,12 @@ recap() {
   else
     local passDisplay="$boldOn""hidden password""$boldOff"
   fi
-  
-  if [[ ! -z "$address2" ]]
-  then
-    recap=`cat <<__EOF__
-$boldOn Parameter Review:
-  User Information $boldOff
-      $username/[$passDisplay]
-  $boldOn Device Information $boldOff
-      Name: $newname
-      Description: $description
-      Location:
-        $address1
-        $address2
-        $city, $state $postal $country
-
-__EOF__`
-  else
     recap=`cat <<__EOF__
 Parameter Review:
   User Information
       $username/[$passDisplay]
   Device Information
       Name: $newname
-      Description: $description
-      Location:
-        $address1
-        $city, $state $postal $country
 
 __EOF__`
   fi
@@ -803,11 +418,9 @@ review() {
           passwordAsk
           continue
         fi
-        
-        writeConfigFile
         escapeParametersBatch
         process_files "wget -q -O response.xml \
-        --post-data=username=$username&password=$password&profile_id=$profileID&host_name=$newname&address1=$address1&address2=$address2&city=$city&state=$state&postal=$postal&country=$country&description=$description \                    
+        --post-data=username=$username&password=$password&profile_id=$profileID&host_name=$newname \
         http://api.yantranet.com/ynt/app/v0.2/system/license_manager/create"
         break
       ;;
@@ -1038,8 +651,6 @@ process_files() {
   if [[ ! -z "$license_key" ]]
   then
     echo ""
-    echo "Processing files..."
-    echo ""
     echo "You have received the following license key:"
     echo "$license_key"
     echo ""
@@ -1132,7 +743,7 @@ __EOF__`
 editParams() {
   PS3="Which one? > "
   recap c
-  local choices="Username Password Hostname Description Address1 Address2 City State Zip-code Country Review Exit Done"
+  local choices="Username Password Hostname Review Exit Done"
   local choice
   select choice in $choices
   do
@@ -1143,42 +754,17 @@ editParams() {
         passwordAsk ;;
       Hostname )
         hostnameAsk ;;
-      Description )
-        descriptionAsk ;;
-      Address1 )
-        address1Ask ;;
-      Address2 )
-        address2Ask ;;
-      City )
-        cityAsk ;;
-      State )
-        stateAsk ;;
-      Zip-code )
-        postalAsk ;;
-      Country )
-        countryAsk ;;
       Review )
         editParams ;;
-      Exit )
-        select subchoice in "Save Config" "Exit without saving"
-        do
-          case $subchoice in
-            "Save Config" )
-              writeConfigFile
-              exit 0
-            ;;
-            "Exit without saving" )
-              exit 0
-          esac
-        done
-      ;;
+      Exit Setup )
+        exit 0 ;;
       Done )
-        writeConfigFile
         review
         break
     esac
   done
 } # end editParams()
+
 ###############################################################################
 # End of functions for -c/-C/--create #########################################
 ###############################################################################
@@ -1236,37 +822,20 @@ tidyUp() {
       echo ""
     fi
   fi 
-  local prompt="Would you like to remove the config file, too?"
-  while :
-  do
-    echo "$prompt [Y/n] > "
-    read
-    case $REPLY in
-      y | Y | "" )
-        echo "Okay, I'll take care of that for you"
-        if [[ -e "$configDir$ynsetupConf" ]]
-        then
-          rm -f "$configDir$ynsetupConf"
-          if [[ "$?" = "0" ]]
-          then
-            echo ""
-            echo "The $configDir$ynsetupConf file has been removed"
-            echo ""
-          fi
-        fi
-        break
-      ;;
-      n | N )
-        echo "Okay, I will leave it there for future generations to admire"
-        break
-      ;;
-      * )
-        continue
-    esac
-  done
+  if [[ -e "$configDir$ynsetupConf" ]]
+  then
+    rm -f "$configDir$ynsetupConf"
+    if [[ "$?" = "0" ]]
+    then
+      echo ""
+      echo "The $configDir$ynsetupConf file has been removed"
+      echo ""
+    fi
+  fi
 } # end of tidyUp()
 
-resetEverything() {
+resetEverything() 
+{
   if [[ -e "$agentDir$installBackup" ]]
   then
     rm -f "$agentDir$installBackup"
@@ -1282,10 +851,11 @@ resetEverything() {
 ###############################################################################
 # MAIN ########################################################################
 ###############################################################################
-whoaminow
+
+whoaminow # Need to have Admin priv's to run
 
 # Process the options
-if [[ $# -eq 0 ]] ; then
+if [[ $# -eq 0 ]] ; then # Must be run with command line args or you get help
   help
 else
   mode=$1
@@ -1293,39 +863,14 @@ else
     -c | -C | --create )
       stopMonitor && stopAgent
       stopAppMonitor && sleep 1 && stopWebApp
+      useConfig = 'false'
       intro
       startConfirm
-      askConfigFile
-      if [[ "$useConfig" = "true" ]]
-      then
-        review
-        exit 0
-      else
-        unameAsk
-        passwordAsk
-        hostnameAsk
-        descriptionAsk
-        address1Ask
-        address2Ask
-        cityAsk
-        stateAsk
-        postalAsk
-        countryAsk
-        review
-        exit 0
-      fi
-    ;;
-    -t )
-      askConfigFile
-      if [[ "$useConfig" = "true" ]]
-      then
-        escapeParametersBatch
-        echo ""
-        echo "$description"
-        echo "$address1"
-        recap
-        exit 0
-      fi
+      unameAsk
+      passwordAsk
+      hostnameAsk
+      review
+      exit 0
     ;;
     -p | -P | --prep )
       stopMonitor && stopAgent
@@ -1338,11 +883,11 @@ else
       hostname -F "$configDir$hostnameFile"
       exit 0
     ;;
-    --help )
+    -h | --help )
       help 2
       exit 0
     ;;
-    --version )
+    -v | --version )
       versionInfo
       exit 0
     ;;

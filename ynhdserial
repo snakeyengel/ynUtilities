@@ -1,8 +1,10 @@
 #!/bin/bash
 
-# hdserial.sh
-# retrieves the serial num of main hard-drive and stores it in a text file for
-#+ retrieval and/or upload/download.
+# Retrieves the serial num of main hard-drive controller and writes the value
+# to the hdserialnum variable of the YantraNet SQLite database.
+#
+# Copyright (c) 2013, Eric Young. All rights reserved.
+#
 
 # Test for su priv's
 whoaminow() {
@@ -15,10 +17,12 @@ whoaminow() {
 
 helpBlurb() {
   cat <<__EOF__
-Usage is: sudo $0 [devname]
+
+Usage is: sudo $0 <devname>
+
 Gets the serial number of whatever disk drive specified and stores it in a text
 file that can be retrieved by the YantraNet platform from the portal.
-  [devname]      Specifies the drive to query, e.g., /dev/sda
+  <devname>      Specifies the drive to query, e.g., /dev/sda
 
 __EOF__
 } # end helpBlurb()
