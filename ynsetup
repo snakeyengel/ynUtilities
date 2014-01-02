@@ -82,7 +82,7 @@ versionInfo() {
   echo "      Version: 1.1.0"
   echo "       Author: Eric Young (eyoung@everwell.com)"
   echo "      Written: Nov. 10, 2012"
-  echo " Last Updated: Nov. 29, 2012"
+  echo " Last Updated: Jan. 02, 2014"
   cat <<__EOF__
 Changelog: 
   v.6:
@@ -114,7 +114,7 @@ whoaminow() {
 helpBlurb() {
   cat <<__EOF__
   
-Usage is: sudo $0 [-c|--create|-p|--prep|-h|--help|-v|--version]
+Usage is: sudo $0 [ -cphv] [ --create] [ --prep] [ --help] [ --version]
 
 Can be used to setup a YantraNet digital-signage device for deployment
 into the field, or for preparing an image by removing all licensing and
@@ -247,7 +247,7 @@ startConfirm() {
 
 unameAsk() {
   local prompt="Enter your YantraNet account username"
-  if [[ ! -z "$username" ]]
+  if [[ ! -z "$username" ]] # Not empty
   then
     read -e -i $username -p "$prompt [$username]> "
     case $REPLY in
@@ -287,38 +287,75 @@ unameAsk() {
 passwordAsk() {
   echo ""
   local prompt="Enter your YantraNet account password"
-  echo -n "$prompt >"
-  pchoice=""
-  read -s pchoice
-  while :
-  do
-    case $pchoice in
-      "" )
-        echo ""
-        echo -n "$prompt >"
-        read -s
-        continue
-      ;;
-      * )
-        echo ""
-        echo -n "Re-enter your password to confirm it > "
-        passwordConfirm "$pchoice"
-        if [[ "$pchoice" == "$pcChoice" ]]
-        then
-          password="$pchoice"
+  if [[ ! -z "$password" ]] # Not empty
+  then
+    echo -n "$prompt >"
+    pchoice=""
+    read -s pchoice
+    while :
+    do
+      case $pchoice in
+        "" )
           echo ""
-          echo "  Your password has now been set."
+          echo -n "$prompt >"
+          read -s pchoice
+          continue
+        ;;
+        * )
           echo ""
+          echo -n "Re-enter your password to confirm it > "
+          passwordConfirm "$pchoice"
+          if [[ "$pchoice" == "$pcChoice" ]]
+          then
+            password="$pchoice"
+            echo ""
+            echo "  Your password has now been set."
+            echo ""
+            editParams
+            break
+          else
+            echo ""
+            echo "The two entries did NOT match"
+            password=""
+            passwordAsk
+          fi
           break
-        else
+      esac
+    done
+  else
+    echo -n "$prompt >"
+    pchoice=""
+    read -s pchoice
+    while :
+    do
+      case $pchoice in
+        "" )
           echo ""
-          echo "The two entries did NOT match"
-          password=""
-          passwordAsk
-        fi
-        break
-    esac
-  done
+          echo -n "$prompt >"
+          read -s pchoice
+          continue
+        ;;
+        * )
+          echo ""
+          echo -n "Re-enter your password to confirm it > "
+          passwordConfirm "$pchoice"
+          if [[ "$pchoice" == "$pcChoice" ]]
+          then
+            password="$pchoice"
+            echo ""
+            echo "  Your password has now been set."
+            echo ""
+            break
+          else
+            echo ""
+            echo "The two entries did NOT match"
+            password=""
+            passwordAsk
+          fi
+          break
+      esac
+    done
+  fi
 } # end passwordAsk()
 
 passwordConfirm() {
@@ -397,7 +434,6 @@ Parameter Review:
       Name: $newname
 
 __EOF__`
-  fi
   echo -e "$recap"
 } # end of recap()  
 
@@ -406,13 +442,13 @@ review() {
   recap c
   echo ""
   echo "You will be prompted for your password if it is not set."
-  echo -n "Are you satisfied with these parameters? [y/n] > "
+  echo -n "Are you satisfied with these parameters? [Y/n] > "
   read choice
   
   while :
   do
     case $choice in
-      y | Y )
+      y | Y | "" )
         if [[ -z "$password" ]]
         then
           passwordAsk
@@ -432,7 +468,7 @@ review() {
       * )
         echo ""
         echo "You will be prompted for your password if it is not set."
-        echo -n "Are you satisfied with these parameters? [y/n] >"
+        echo -n "Are you satisfied with these parameters? [Y/n] >"
         read choice
         continue
     esac
@@ -743,6 +779,7 @@ __EOF__`
 editParams() {
   PS3="Which one? > "
   recap c
+  echo ""
   local choices="Username Password Hostname Review Exit Done"
   local choice
   select choice in $choices
@@ -756,7 +793,7 @@ editParams() {
         hostnameAsk ;;
       Review )
         editParams ;;
-      Exit Setup )
+      Exit )
         exit 0 ;;
       Done )
         review
