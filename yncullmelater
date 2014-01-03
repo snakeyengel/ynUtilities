@@ -7,6 +7,9 @@
 
 listName='/home/yantrauser/bin/media_list.csv'
 baseDir='/opt/yantranet/agent/content'
+total=0
+culled=0
+skipped=0
 
 if [[ ! -e "$listName" ]]
 then
@@ -21,6 +24,7 @@ cd $baseDir
 
 while read -r culledFile
 do
+  total+=$total  
   if [ -e "$culledFile" ]
   then
     echo
@@ -29,8 +33,10 @@ do
 
     if [ ! -e "$culledFile" ]
     then
+      culled+=$culled
       echo "$culledFile has been deleted! Yay!!!"
     else
+      skipped+=$skipped
       echo "$culledFile still lives!!!!! Zombie!"
     fi
 
@@ -39,3 +45,17 @@ do
       echo "Didn't find $culledFile"
   fi
 done < "$listName"
+
+echo
+echo "Summary:"
+echo "--------"
+echo 
+echo "File list contained $total entries"
+echo "$culled files were removed"
+if [[ "$#skipped" > 0 ]]
+then
+  echo "$skipped zombies live on"
+fi
+total=$total - $culled
+echo "$total requests were ignored because they've already been removed"
+echo
