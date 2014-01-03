@@ -729,7 +729,7 @@ process_files() {
     if [ "$?" = "0" ]; then
       echo ""
       echo "The license key has been updated"
-      rm /home/yantrauser/response.xml
+      #rm /home/yantrauser/response.xml
       if [ "$?" = "0" ]; then
         echo "Installation files have been updated"
       fi
