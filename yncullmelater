@@ -24,7 +24,7 @@ cd $baseDir
 
 while read -r culledFile
 do
-  total+=$total  
+  total+=1  
   if [ -e "$culledFile" ]
   then
     echo
@@ -33,10 +33,10 @@ do
 
     if [ ! -e "$culledFile" ]
     then
-      culled+=$culled
+      culled+=1
       echo "$culledFile has been deleted! Yay!!!"
     else
-      skipped+=$skipped
+      skipped+=1
       echo "$culledFile still lives!!!!! Zombie!"
     fi
 
@@ -52,7 +52,7 @@ echo "--------"
 echo 
 echo "File list contained $total entries"
 echo "$culled files were removed"
-if [[ "$#skipped" > 0 ]]
+if [[ "$skipped" -gt "0" ]]
 then
   echo "$skipped zombies live on"
 fi
