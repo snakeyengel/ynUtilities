@@ -1,0 +1,30 @@
+﻿Changelog for YantraNet Image v3
+-----------------------------
+Image finished on Friday, January 3rd, 2014 (1.3.2014)
+Installed Git
+Linked Git account and cloned repository in /home/yantrauser/bin
+Moved all yn* scripts into bin
+Linked all yn* scripts in /home/yantrauser/bin to /usr/bin
+Uninstalled all old agents and runtimes
+Installed new agent and new runtime
+Copied over content
+Changed permissions on /opt/yantranet/agent/content dir, content and content dir subdirs
+Edited yncullmelater and then ran it against the content
+  yncullmelater now gives a summary of # of files removed, ignored, totals, etc
+Removed deepster and suman folders and subdirs and content from /home
+  Checked for prior username or user accounts in those names, but none existed
+Changed root password
+Changed yantrauser password
+Created the "sg" subdomain @ unidb.org
+Added DNS entry to unidb.org DNS servers for sg.unidb.org00
+Pointed the SimpleGateway processes to point to http://sg.unidb.org instead of the IP address
+Added info and copyrights to all yn* scripts
+Copied old ynsetup script to /home/yantrauser/bin/ynoldsetup
+Edited and automated ynsetup
+  Removed 7 functions
+  Changed default entry functionality from beginning to end to facilitate speedy execution
+  Made only requirements be username, password and name of device
+  Changed profile_ID from 22 to 27 to reflect changes on Yantranet server
+Removed ynconfig file from /etc
+Removed all other yn* files from /etc
+  Left /etc/mvm.conf to use in future tie-in to ynsetup
